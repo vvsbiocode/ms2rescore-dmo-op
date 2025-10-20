@@ -7,10 +7,10 @@ from itertools import chain
 from typing import Optional, Set, Tuple
 
 import numpy as np
-from ms2rescore_rs import get_precursor_info
+from ms2rescore_rs import Precursor, get_precursor_info
 from psm_utils import PSMList
 
-from ms2rescore.exceptions import MS2RescoreError
+from ms2rescore.exceptions import MS2RescoreConfigurationError, MS2RescoreError
 from ms2rescore.utils import infer_spectrum_path
 
 LOGGER = logging.getLogger(__name__)
@@ -149,6 +149,43 @@ def add_precursor_values(
     return available_data_types
 
 
+def _apply_spectrum_id_pattern(
+    precursors: dict[str, Precursor], pattern: str
+) -> dict[str, Precursor]:
+    """Apply spectrum ID pattern to precursor IDs."""
+    # Map precursor IDs using regex pattern
+    compiled_pattern = re.compile(pattern)
+    id_mapping = {
+        match.group(1): spectrum_id
+        for spectrum_id in precursors.keys()
+        if (match := compiled_pattern.search(spectrum_id)) is not None
+    }
+
+    # Validate that any IDs were matched
+    if not id_mapping:
+        raise MS2RescoreConfigurationError(
+            "'spectrum_id_pattern' did not match any spectrum-file IDs. Please check and try "
+            "again. See "
+            "https://ms2rescore.readthedocs.io/en/stable/userguide/configuration/#mapping-psms-to-spectra "
+            "for more information."
+        )
+
+    # Validate that the same number of unique IDs were matched
+    elif len(set(id_mapping.keys())) != len(set(precursors.keys())):
+        example_old_id, example_new_id = next(iter(id_mapping.items()))
+        raise MS2RescoreConfigurationError(
+            "'spectrum_id_pattern' resulted in a different number of unique PSM IDs. This might "
+            "indicate issues with the regex pattern. Please check and try again. "
+            f"Example old ID: '{example_old_id}' -> new ID: '{example_new_id}'. "
+            "See https://ms2rescore.readthedocs.io/en/stable/userguide/configuration/#mapping-psms-to-spectra "
+            "for more information."
+        )
+
+    precursors = {new_id: precursors[orig_id] for new_id, orig_id in id_mapping.items()}
+
+    return id_mapping
+
+
 def _get_precursor_values(
     psm_list: PSMList, spectrum_path: str, spectrum_id_pattern: Optional[str] = None
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -162,21 +199,23 @@ def _get_precursor_values(
             spectrum_file = infer_spectrum_path(spectrum_path, run_name)
 
             LOGGER.debug("Reading spectrum file: '%s'", spectrum_file)
-            precursors = get_precursor_info(str(spectrum_file))
+            precursors: dict[str, Precursor] = get_precursor_info(str(spectrum_file))
+
+            # Ensure unique spectrum IDs
+            if len(precursors) != len(set(precursors.keys())):
+                raise SpectrumParsingError(
+                    f"Spectrum file '{spectrum_file}' contains duplicate spectrum IDs. "
+                    "Please ensure that all spectrum IDs are unique."
+                )
 
             # Parse spectrum IDs with regex pattern if provided
             if spectrum_id_pattern:
-                compiled_pattern = re.compile(spectrum_id_pattern)
-                precursors = {
-                    match.group(1): precursor
-                    for spectrum_id, precursor in precursors.items()
-                    if (match := compiled_pattern.search(spectrum_id)) is not None
-                }
+                precursors = _apply_spectrum_id_pattern(precursors, spectrum_id_pattern)
 
             # Ensure all PSMs have a precursor values
             for psm in psm_list_run:
                 if psm.spectrum_id not in precursors:
-                    raise SpectrumParsingError(
+                    raise MS2RescoreConfigurationError(
                         "Mismatch between PSM and spectrum file IDs. Could find precursor values "
                         f"for PSM with ID {psm.spectrum_id} in run {run_name}.\n"
                         "Please check that the `spectrum_id_pattern` and `psm_id_pattern` options "
@@ -199,6 +238,6 @@ def _get_precursor_values(
 
 
 class SpectrumParsingError(MS2RescoreError):
-    """Error parsing retention time from spectrum file."""
+    """Error while parsing spectrum file."""
 
     pass

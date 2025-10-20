@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 from psm_utils import PSM, PSMList
 
+from ms2rescore.exceptions import MS2RescoreConfigurationError
 from ms2rescore.parse_spectra import (
     MSDataType,
     SpectrumParsingError,
@@ -12,9 +13,25 @@ from ms2rescore.parse_spectra import (
 )
 
 
+def psm_list_factory(ids):
+    return PSMList(
+        psm_list=[
+            PSM(
+                peptidoform="PEPTIDE/2",
+                run="run1",
+                spectrum_id=sid,
+                retention_time=None,
+                ion_mobility=None,
+                precursor_mz=None,
+            )
+            for sid in ids
+        ]
+    )
+
+
 @pytest.fixture
 def mock_psm_list():
-    psm_list = PSMList(
+    return PSMList(
         psm_list=[
             PSM(
                 peptidoform="PEPTIDE/2",
@@ -34,7 +51,6 @@ def mock_psm_list():
             ),
         ]
     )
-    return psm_list
 
 
 @pytest.fixture
@@ -57,8 +73,37 @@ def mock_precursor_info_missing_im():
 def mock_precursor_info_incomplete():
     return {
         "spectrum1": MagicMock(mz=529.7935187324, rt=10.5, im=1.0),
-        # "spectrum2" is missing
+        # spectrum2 intentionally missing
     }
+
+
+def test_spectrum_id_pattern_nonmatching(monkeypatch):
+    """If the provided spectrum_id_pattern doesn't match any spectrum-file IDs, raise."""
+    psm_list = psm_list_factory(["scan:1:fileA"])  # PSM id doesn't matter for this test
+
+    # Fake precursor info returns IDs that do not match the regex below
+    def fake_get_precursor_info(path):
+        class FakePrecursor:
+            def __init__(self, mz, rt, im):
+                self.mz = mz
+                self.rt = rt
+                self.im = im
+
+        return {"specA": FakePrecursor(100.0, 1.0, 0.1), "specB": FakePrecursor(200.0, 2.0, 0.2)}
+
+    monkeypatch.setattr("ms2rescore.parse_spectra.get_precursor_info", fake_get_precursor_info)
+    # Avoid filesystem validation in infer_spectrum_path by returning a dummy path
+    monkeypatch.setattr("ms2rescore.parse_spectra.infer_spectrum_path", lambda cfg, rn: "dummy")
+
+    # Request a data type that is missing (retention_time) so the function will
+    # parse spectrum files and therefore apply the spectrum_id_pattern.
+    with pytest.raises(MS2RescoreConfigurationError):
+        add_precursor_values(
+            psm_list,
+            {MSDataType.retention_time},
+            spectrum_path="/not/used",
+            spectrum_id_pattern=r"scan:(\d+):.*",
+        )
 
 
 @patch("ms2rescore.parse_spectra.get_precursor_info")
@@ -148,7 +193,7 @@ def test_get_precursor_values_missing_spectrum_id(
     mock_infer_spectrum_path.return_value = "test_data/test_spectrum_file.mgf"
     mock_get_precursor_info.return_value = mock_precursor_info_incomplete
 
-    with pytest.raises(SpectrumParsingError):
+    with pytest.raises(MS2RescoreConfigurationError):
         _get_precursor_values(mock_psm_list, "test_data", None)
 
 
@@ -214,8 +259,6 @@ def test_add_precursor_values_ms2_spectra_availability():
     required_data_types = {MSDataType.retention_time}
     available_ms_data = add_precursor_values(psm_list, required_data_types)
     assert MSDataType.ms2_spectra not in available_ms_data
-
-    # With spectrum path - MS2 spectra available (but we can't test this without mocking)
 
 
 def test_spectrum_parsing_error():
