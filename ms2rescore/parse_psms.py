@@ -35,6 +35,24 @@ def parse_psms(config: Dict, psm_list: Union[PSMList, None]) -> PSMList:
             " for more information."
         )
 
+    # Filter by PSM rank
+    psm_list.set_ranks(config["lower_score_is_better"])
+    rank_filter = psm_list["rank"] <= config["max_psm_rank_input"]
+    psm_list = psm_list[rank_filter]
+    logger.info(f"Removed {sum(~rank_filter)} PSMs with rank >= {config['max_psm_rank_input']}.")
+
+    # Remove invalid AAs, find decoys, calculate q-values
+    psm_list = _remove_invalid_aa(psm_list)
+    _find_decoys(psm_list, config["id_decoy_pattern"])
+    _calculate_qvalues(psm_list, config["lower_score_is_better"])
+
+    # Parse retention time and/or ion mobility from spectrum_id if patterns provided
+    if config["psm_id_rt_pattern"] or config["psm_id_im_pattern"]:
+        logger.debug("Parsing retention time and/or ion mobility from PSM identifier...")
+        _parse_values_from_spectrum_id(
+            psm_list, config["psm_id_rt_pattern"], config["psm_id_im_pattern"]
+        )
+
     # Apply psm_id_pattern if provided
     if config["psm_id_pattern"]:
         pattern = re.compile(config["psm_id_pattern"])
@@ -60,22 +78,6 @@ def parse_psms(config: Dict, psm_list: Union[PSMList, None]) -> PSMList:
         # Assign new IDs
         psm_list["spectrum_id"] = new_ids
 
-    # Filter by PSM rank
-    psm_list.set_ranks(config["lower_score_is_better"])
-    rank_filter = psm_list["rank"] <= config["max_psm_rank_input"]
-    psm_list = psm_list[rank_filter]
-    logger.info(f"Removed {sum(~rank_filter)} PSMs with rank >= {config['max_psm_rank_input']}.")
-
-    # Remove invalid AAs, find decoys, calculate q-values
-    psm_list = _remove_invalid_aa(psm_list)
-    _find_decoys(psm_list, config["id_decoy_pattern"])
-    _calculate_qvalues(psm_list, config["lower_score_is_better"])
-    if config["psm_id_rt_pattern"] or config["psm_id_im_pattern"]:
-        logger.debug("Parsing retention time and/or ion mobility from PSM identifier...")
-        _parse_values_from_spectrum_id(
-            psm_list, config["psm_id_rt_pattern"], config["psm_id_im_pattern"]
-        )
-
     # Store scoring values for comparison later
     for psm in psm_list:
         psm.provenance_data.update(
@@ -87,6 +89,7 @@ def parse_psms(config: Dict, psm_list: Union[PSMList, None]) -> PSMList:
             }
         )
 
+    # Rename and add modifications
     logger.debug("Parsing modifications...")
     modifications_found = set(
         [

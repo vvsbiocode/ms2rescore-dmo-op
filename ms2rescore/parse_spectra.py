@@ -174,8 +174,8 @@ def _apply_spectrum_id_pattern(
     elif len(id_mapping) != len(precursors):
         new_id, old_id = next(iter(id_mapping.items()))
         raise MS2RescoreConfigurationError(
-            "'spectrum_id_pattern' resulted in a different number of unique PSM IDs. This might "
-            "indicate issues with the regex pattern. Please check and try again. "
+            "'spectrum_id_pattern' resulted in a different number of unique spectrum IDs. This "
+            "indicates issues with the regex pattern. Please check and try again. "
             f"Example old ID: '{old_id}' -> new ID: '{new_id}'. "
             "See https://ms2rescore.readthedocs.io/en/stable/userguide/configuration/#mapping-psms-to-spectra "
             "for more information."
