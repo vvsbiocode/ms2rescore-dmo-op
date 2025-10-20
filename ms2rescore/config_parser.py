@@ -104,7 +104,7 @@ def _validate_regular_expressions(config: Dict) -> Dict:
             if pattern.groups != 1:
                 raise MS2RescoreConfigurationError(
                     f"Regular expression for '{field}' should contain exactly one "
-                    "capturing group. Please check and try again."
+                    "capturing group. Please check and try again. "
                     "See https://ms2rescore.readthedocs.io/en/stable/userguide/configuration/#mapping-psms-to-spectra "
                     "for more information."
                 )

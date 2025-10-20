@@ -171,19 +171,19 @@ def _apply_spectrum_id_pattern(
         )
 
     # Validate that the same number of unique IDs were matched
-    elif len(set(id_mapping.keys())) != len(set(precursors.keys())):
-        example_old_id, example_new_id = next(iter(id_mapping.items()))
+    elif len(id_mapping) != len(precursors):
+        new_id, old_id = next(iter(id_mapping.items()))
         raise MS2RescoreConfigurationError(
             "'spectrum_id_pattern' resulted in a different number of unique PSM IDs. This might "
             "indicate issues with the regex pattern. Please check and try again. "
-            f"Example old ID: '{example_old_id}' -> new ID: '{example_new_id}'. "
+            f"Example old ID: '{old_id}' -> new ID: '{new_id}'. "
             "See https://ms2rescore.readthedocs.io/en/stable/userguide/configuration/#mapping-psms-to-spectra "
             "for more information."
         )
 
     precursors = {new_id: precursors[orig_id] for new_id, orig_id in id_mapping.items()}
 
-    return id_mapping
+    return precursors
 
 
 def _get_precursor_values(
@@ -201,13 +201,6 @@ def _get_precursor_values(
             LOGGER.debug("Reading spectrum file: '%s'", spectrum_file)
             precursors: dict[str, Precursor] = get_precursor_info(str(spectrum_file))
 
-            # Ensure unique spectrum IDs
-            if len(precursors) != len(set(precursors.keys())):
-                raise SpectrumParsingError(
-                    f"Spectrum file '{spectrum_file}' contains duplicate spectrum IDs. "
-                    "Please ensure that all spectrum IDs are unique."
-                )
-
             # Parse spectrum IDs with regex pattern if provided
             if spectrum_id_pattern:
                 precursors = _apply_spectrum_id_pattern(precursors, spectrum_id_pattern)
@@ -216,8 +209,8 @@ def _get_precursor_values(
             for psm in psm_list_run:
                 if psm.spectrum_id not in precursors:
                     raise MS2RescoreConfigurationError(
-                        "Mismatch between PSM and spectrum file IDs. Could find precursor values "
-                        f"for PSM with ID {psm.spectrum_id} in run {run_name}.\n"
+                        "Mismatch between PSM and spectrum file IDs. Could not find precursor "
+                        f"values for PSM with ID {psm.spectrum_id} in run {run_name}.\n"
                         "Please check that the `spectrum_id_pattern` and `psm_id_pattern` options "
                         "are configured correctly. See "
                         "https://ms2rescore.readthedocs.io/en/stable/userguide/configuration/#mapping-psms-to-spectra"
