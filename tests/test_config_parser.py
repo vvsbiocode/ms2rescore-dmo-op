@@ -33,6 +33,8 @@ def test__validate_regular_expressions_valid():
         "ms2rescore": {
             "psm_id_pattern": r"scan:(\d+):.*",
             "spectrum_id_pattern": r"spectrum_(\d+)",
+            "psm_id_rt_pattern": None,
+            "psm_id_im_pattern": None,
         }
     }
     result = _validate_regular_expressions(config)
@@ -45,6 +47,8 @@ def test__validate_regular_expressions_none():
         "ms2rescore": {
             "psm_id_pattern": None,
             "spectrum_id_pattern": None,
+            "psm_id_rt_pattern": None,
+            "psm_id_im_pattern": None,
         }
     }
     result = _validate_regular_expressions(config)
@@ -57,6 +61,8 @@ def test__validate_regular_expressions_invalid_regex():
         "ms2rescore": {
             "psm_id_pattern": r"scan:(\d+",  # Missing closing parenthesis
             "spectrum_id_pattern": None,
+            "psm_id_rt_pattern": None,
+            "psm_id_im_pattern": None,
         }
     }
     with pytest.raises(MS2RescoreConfigurationError, match="Invalid regular expression"):
@@ -69,6 +75,8 @@ def test__validate_regular_expressions_no_capturing_group():
         "ms2rescore": {
             "psm_id_pattern": r"scan:\d+:.*",  # No capturing group
             "spectrum_id_pattern": None,
+            "psm_id_rt_pattern": None,
+            "psm_id_im_pattern": None,
         }
     }
     with pytest.raises(
@@ -83,6 +91,8 @@ def test__validate_regular_expressions_multiple_capturing_groups():
         "ms2rescore": {
             "psm_id_pattern": r"scan:(\d+):(.*)",  # Two capturing groups
             "spectrum_id_pattern": None,
+            "psm_id_rt_pattern": None,
+            "psm_id_im_pattern": None,
         }
     }
     with pytest.raises(
@@ -97,6 +107,8 @@ def test__validate_regular_expressions_spectrum_id_pattern_invalid():
         "ms2rescore": {
             "psm_id_pattern": None,
             "spectrum_id_pattern": r"spectrum_\d+",  # No capturing group
+            "psm_id_rt_pattern": None,
+            "psm_id_im_pattern": None,
         }
     }
     with pytest.raises(
