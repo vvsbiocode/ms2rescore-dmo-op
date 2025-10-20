@@ -89,7 +89,12 @@ def _validate_processes(config: Dict) -> Dict:
 
 def _validate_regular_expressions(config: Dict) -> Dict:
     """Validate regular expressions in configuration."""
-    for field in ["psm_id_pattern", "spectrum_id_pattern"]:
+    for field in [
+        "psm_id_pattern",
+        "spectrum_id_pattern",
+        "psm_id_rt_pattern",
+        "psm_id_im_pattern",
+    ]:
         if config["ms2rescore"][field]:
 
             # Check if valid regex

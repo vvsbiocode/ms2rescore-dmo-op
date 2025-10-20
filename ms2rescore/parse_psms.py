@@ -62,7 +62,7 @@ def parse_psms(config: Dict, psm_list: Union[PSMList, None]) -> PSMList:
         )
         new_ids = [_match_psm_ids(old_id, pattern) for old_id in psm_list["spectrum_id"]]
 
-        # Validate that n unique IDs remains the same
+        # Validate that the number of unique IDs remains the same
         if len(set(new_ids)) != len(set(psm_list["spectrum_id"])):
             example_old_id = psm_list["spectrum_id"][0]
             example_new_id = new_ids[0]

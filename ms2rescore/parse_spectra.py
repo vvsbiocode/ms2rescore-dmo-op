@@ -205,7 +205,7 @@ def _get_precursor_values(
             if spectrum_id_pattern:
                 precursors = _apply_spectrum_id_pattern(precursors, spectrum_id_pattern)
 
-            # Ensure all PSMs have a precursor values
+            # Ensure all PSMs have precursor values
             for psm in psm_list_run:
                 if psm.spectrum_id not in precursors:
                     raise MS2RescoreConfigurationError(
