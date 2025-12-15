@@ -46,7 +46,9 @@ while requirements:
     module_version = importlib.metadata.version(re.match(r"^[\w\-]+", requirement)[0])
     try:
         datas_, binaries_, hidden_imports_ = collect_all(requirement, include_py_files=True)
-    except ImportError:
+    except (ImportError, RuntimeError) as e:
+        # Skip packages that fail to collect (e.g., xgboost.testing requires hypothesis)
+        print(f"Warning: Failed to collect {requirement}: {e}")
         continue
     datas += datas_
     hidden_imports_ = set(hidden_imports_)
