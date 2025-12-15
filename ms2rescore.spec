@@ -53,7 +53,7 @@ while requirements:
             filter_submodules=filter_func
         )
     except (ImportError, RuntimeError) as e:
-        # Skip packages that fail to collect
+        # Skip packages that fail to collect (e.g., xgboost.testing requires hypothesis)
         print(f"Warning: Failed to collect {requirement}: {e}")
         continue
     datas += datas_
