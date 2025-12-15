@@ -3,6 +3,7 @@
 import importlib.resources
 import json
 import logging
+import sys
 from datetime import datetime
 from itertools import cycle
 from pathlib import Path
@@ -12,6 +13,7 @@ import pandas as pd
 import plotly.express as px
 import psm_utils.io
 from jinja2 import Environment, FileSystemLoader
+from plotly.offline import get_plotlyjs_version
 from psm_utils.psm_list import PSMList
 
 try:
@@ -93,6 +95,7 @@ def generate_report(
     log_context = _get_log_context(files)
 
     context = {
+        "plotlyjs_version": get_plotlyjs_version(),
         "metadata": {
             "generated_on": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
             "ms2rescore_version": ms2rescore.__version__,  # TODO: Write during run?
@@ -418,8 +421,10 @@ def _render_and_write(output_path_prefix: str, **context):
     """Render template with context and write to HTML file."""
     report_path = Path(output_path_prefix + ".report.html").resolve()
     logger.info("Writing report to %s", report_path.as_posix())
-    template_dir = Path(__file__).parent / "templates"
-    env = Environment(loader=FileSystemLoader(template_dir, encoding="utf-8"))
+
+    # Use importlib.resources for PyInstaller compatibility
+    template_dir = importlib.resources.files(templates)
+    env = Environment(loader=FileSystemLoader(str(template_dir), encoding="utf-8"))
     template = env.get_template("base.html")
     with open(report_path, "w", encoding="utf-8") as f:
         f.write(template.render(**context))
