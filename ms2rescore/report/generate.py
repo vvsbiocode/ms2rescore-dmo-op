@@ -3,7 +3,6 @@
 import importlib.resources
 import json
 import logging
-import sys
 from datetime import datetime
 from itertools import cycle
 from pathlib import Path
