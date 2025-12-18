@@ -859,6 +859,23 @@ def _check_updates_sync(root):
         pass
 
 
+def _setup_logging(log_level: str, log_file: str):
+    """Setup file logging for GUI."""
+    log_level_map = {
+        "critical": logging.CRITICAL,
+        "error": logging.ERROR,
+        "warning": logging.WARNING,
+        "info": logging.INFO,
+        "debug": logging.DEBUG,
+    }
+    file_handler = logging.FileHandler(log_file, mode="w", encoding="utf-8")
+    file_handler.setFormatter(
+        logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    )
+    file_handler.setLevel(log_level_map.get(log_level, logging.INFO))
+    logging.getLogger().addHandler(file_handler)
+
+
 def function(config):
     """Function to be executed in a separate process."""
     config = config.copy()
@@ -867,6 +884,12 @@ def function(config):
     else:
         config_list = [config]
     config = parse_configurations(config_list)
+
+    # Set up file logging for GUI
+    _setup_logging(
+        config["ms2rescore"]["log_level"], config["ms2rescore"]["output_path"] + ".log.txt"
+    )
+
     rescore(configuration=config)
     if config["ms2rescore"]["write_report"]:
         webbrowser.open_new_tab(config["ms2rescore"]["output_path"] + ".report.html")
