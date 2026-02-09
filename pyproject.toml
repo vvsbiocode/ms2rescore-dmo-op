@@ -82,6 +82,7 @@ installer = [
     "ms2rescore-rs==0.4.3",
     "deeplc==3.1.13",
     "im2deep==1.2.0",
+    "cbor2",
 ]
 
 [project.urls]
