@@ -78,7 +78,7 @@ installer = [
     "pyopenms==3.5",
     "ionmob>=0.2",
     "tensorflow",
-    "psm_utils==1.5",
+    "psm_utils==1.5.1",
     "ms2rescore-rs==0.4.3",
     "deeplc==3.1.13",
     "im2deep==1.2.0",
