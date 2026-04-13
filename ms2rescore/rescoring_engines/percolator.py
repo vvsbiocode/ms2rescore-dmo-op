@@ -79,7 +79,7 @@ def rescore(
         Additional keyword arguments for Percolator. Defaults to ``None``.
 
     """
-    percolator_kwargs = {
+    intro_percolator_kwargs = {
         "results-psms": output_file_root + ".percolator.psms.pout",
         "decoy-results-psms": output_file_root + ".percolator.decoy.psms.pout",
         "results-peptides": output_file_root + ".percolator.peptides.pout",
@@ -92,7 +92,7 @@ def rescore(
         "post-processing-tdc": True,
     }
     if percolator_kwargs:
-        percolator_kwargs.update(percolator_kwargs)
+        percolator_kwargs.update(intro_percolator_kwargs)
 
     if fasta_file:
         percolator_kwargs["picked-protein"] = fasta_file

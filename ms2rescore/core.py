@@ -143,7 +143,7 @@ def rescore(configuration: Dict, psm_list: Optional[PSMList] = None) -> None:
                 psm_list,
                 output_file_root=output_file_root,
                 log_level=config["log_level"],
-                processes=config["processes"],
+                processes=config["processes"], # bug - fasta_file is not passed, but called in function
                 percolator_kwargs=config["rescoring_engine"]["percolator"],
             )
         elif "mokapot" in config["rescoring_engine"]:

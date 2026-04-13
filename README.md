@@ -1,3 +1,9 @@
+# ms2rescore-dmo-op
+
+Introduced changes:
+- Avoide overwriting `percolator_kwargs` in ms2rescore/rescoring_engines/percolator.py#L82
+
+
 <img src="https://github.com/compomics/ms2rescore/raw/main/img/ms2rescore_logo.png" width="150" height="150" alt="MS²Rescore"/>
 <br/><br/>
 
