@@ -2,6 +2,14 @@
 
 Introduced changes:
 - Avoide overwriting `percolator_kwargs` in ms2rescore/rescoring_engines/percolator.py#L82
+- correct logging of Percolator.
+- correct psm_utils requirments. >=1.5 has ScanNr assigment when write .pin file
+- format terminal modifications in `Peptide` column in .pin file before runing Percolator.
+
+To install custom version of MS2Rescore, clone this repo and run:
+```
+pip install -e .
+```
 
 
 <img src="https://github.com/compomics/ms2rescore/raw/main/img/ms2rescore_logo.png" width="150" height="150" alt="MS²Rescore"/>

@@ -28,6 +28,8 @@ from ms2rescore.exceptions import MS2RescoreError
 
 logger = logging.getLogger(__name__)
 
+from pathlib import Path
+
 
 LOG_LEVEL_MAP = {
     "critical": 0,
@@ -92,7 +94,8 @@ def rescore(
         "post-processing-tdc": True,
     }
     if percolator_kwargs:
-        percolator_kwargs.update(intro_percolator_kwargs)
+        intro_percolator_kwargs.update(percolator_kwargs)
+    percolator_kwargs = intro_percolator_kwargs
 
     if fasta_file:
         percolator_kwargs["picked-protein"] = fasta_file
@@ -117,7 +120,7 @@ def rescore(
 
     logger.debug(f"Running percolator command {' '.join(percolator_cmd)}")
     try:
-        output = subprocess.run(percolator_cmd, capture_output=True)
+        output = subprocess.run(percolator_cmd, capture_output=True, text=True, check=True) #, shell=True, executable="/bin/bash")
     except FileNotFoundError as e:
         if subprocess.getstatusoutput("percolator")[0] != 0:
             raise MS2RescoreError(
@@ -127,10 +130,10 @@ def rescore(
                 "for more information."
             ) from e
         else:
-            logger.warn(f"Running Percolator resulted in an error:\n{output.stdout}")
+            logger.warning(f"Running Percolator resulted in an error:\n{e.stdout}")
             raise MS2RescoreError("Percolator error") from e
     except subprocess.CalledProcessError as e:
-        logger.warn(f"Running Percolator resulted in an error:\n{output.stdout}")
+        logger.warning(f"Running Percolator resulted in an error:\n{e.stdout}\n{e.stderr}\n{e.returncode}")
         raise MS2RescoreError("Percolator error") from e
 
     logger.info(
@@ -188,6 +191,22 @@ def _write_pin_file(psm_list: psm_utils.PSMList, filepath: str):
         style="pin",
         feature_names=psm_list[0].rescoring_features.keys(),
     )
+    logger.debug(f"Fix terminal modifications in PIN file {filepath}")
+    
+    def fix_pin_in_place(pin_file):
+        pin_path = Path(pin_file)
+        script_path = Path(__file__).resolve().parent / "fix_pin_terminal_mods.py"
+        fixed_path = pin_path.with_suffix(".fixed.pin")
+
+        subprocess.run(
+            ["python", str(script_path), str(pin_path), "-o", str(fixed_path)],
+            check=True,
+        )
+
+        fixed_path.replace(pin_path)
+    
+    fix_pin_in_place(filepath)
+
 
 
 def _construct_percolator_command(percolator_kwargs: Dict, pin_filepath: str):
