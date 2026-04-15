@@ -75,7 +75,7 @@ def rewrite_pin_file(input_path: Path, output_path: Path) -> None:
 
         fields = stripped.split("\t")
         if len(fields) > peptide_idx and fields[0] != "DefaultDirection":
-            fields[peptide_idx] = convert_terminal_mod_notation(fields[peptide_idx])
+            fields[peptide_idx] = "-"+convert_terminal_mod_notation(fields[peptide_idx])+"-" #placeholders for flanking aa
 
         output_lines.append("\t".join(fields) + newline)
 
