@@ -5,6 +5,7 @@ Introduced changes:
 - correct logging of Percolator.
 - correct psm_utils requirments. >=1.5 has ScanNr assigment when write .pin file
 - format terminal modifications in `Peptide` column in .pin file before runing Percolator.
+- rolle back to prophorma format when updating psm_list with percolator .pot file.
 
 To install custom version of MS2Rescore, clone this repo and run:
 ```

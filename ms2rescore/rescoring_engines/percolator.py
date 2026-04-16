@@ -120,7 +120,12 @@ def rescore(
 
     logger.debug(f"Running percolator command {' '.join(percolator_cmd)}")
     try:
-        output = subprocess.run(percolator_cmd, capture_output=True, text=True, check=True) #, shell=True, executable="/bin/bash")
+        import shutil
+        print("Percolator path:", shutil.which("percolator"))
+        output = subprocess.run(percolator_cmd) # check=True, shell=True, executable="/bin/bash")
+        print("RETURN CODE:", output.returncode)
+        print("STDOUT:", output.stdout)
+        print("STDERR:", output.stderr)
     except FileNotFoundError as e:
         if subprocess.getstatusoutput("percolator")[0] != 0:
             raise MS2RescoreError(
@@ -136,9 +141,10 @@ def rescore(
         logger.warning(f"Running Percolator resulted in an error:\n{e.stdout}\n{e.stderr}\n{e.returncode}")
         raise MS2RescoreError("Percolator error") from e
 
-    logger.info(
-        "Percolator output: \n" + _decode_string(output.stderr), extra={"highlighter": None}
-    )
+    #logger.info(
+    #    "Percolator output: \n" + _decode_string(output.stderr), extra={"highlighter": None}
+    #)
+    logger.info("Percolator done.")
 
     _update_psm_scores(
         psm_list,
@@ -158,6 +164,22 @@ def _update_psm_scores(
     spectrum_id, and peptidoform.
 
     """
+    def fix_pout_in_place(pout_file):
+        pout_path = Path(pout_file)
+        script_path = Path(__file__).resolve().parent / "fix_pout_terminal_mods.py"
+        fixed_path = pout_path.with_suffix(".fixed.pout")
+
+        subprocess.run(
+            ["python", str(script_path), str(pout_path), "-o", str(fixed_path)],
+            check=True,
+        )
+
+        fixed_path.replace(pout_path)
+
+    logger.debug(f"Rolle back terminal modifications in POUT filed {target_pout} and {decoy_pout}")
+    fix_pout_in_place(target_pout)
+    fix_pout_in_place(decoy_pout)
+
     target_psms = psm_utils.io.read_file(target_pout, filetype="percolator")
     decoy_psms = psm_utils.io.read_file(decoy_pout, filetype="percolator")
     psm_list_percolator = psm_utils.PSMList(psm_list=target_psms.psm_list + decoy_psms.psm_list)
@@ -218,7 +240,7 @@ def _construct_percolator_command(percolator_kwargs: Dict, pin_filepath: str):
             percolator_cmd.append(str(value))
             if key == "init-weights":
                 percolator_cmd.append("--static")
-        elif isinstance(value, bool) & value is False:
+        elif isinstance(value, bool) and value is False:
             continue
         else:
             percolator_cmd.append(f"--{key}")
